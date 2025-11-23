@@ -1,0 +1,13 @@
+{
+  "key": "TEST-123",
+  "summary": "Create a simple HelloWorld module",
+  "description": "Create a simple HelloWorld module",
+  "acceptance_criteria": "1.Create a module that prints 'Hello, World!' to the console when executed.\n2.Ensure the module is well-documented and includes comments explaining the code.\n3.Write unit tests to verify the functionality of the module.",
+  "status": "To Do",
+  "issue_type": "Story",
+  "reporter": "Test User",
+  "assignee": "Developer",
+  "labels": ["backend", "python"],
+  "url": "https://jira.example.com/browse/TEST-123"
+}
+

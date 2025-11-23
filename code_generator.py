@@ -2,8 +2,12 @@
 import os
 from typing import Dict, List
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_litellm import ChatLiteLLM
 from dotenv import load_dotenv
+
+FARM_API_KEY = os.environ["FARM_API_KEY"]
+HEADERS = {"genaiplatform-farm-subscription-key": FARM_API_KEY}
 
 load_dotenv()
 
@@ -17,11 +21,10 @@ class CodeGenerator:
         if not api_key:
             raise ValueError("Missing OPENAI_API_KEY in .env")
         
-        self.llm = ChatOpenAI(
-            model="gpt-4",
-            temperature=0.1,
-            api_key=api_key
-        )
+        self.llm = ChatLiteLLM(
+        model="azure/askbosch-prod-farm-openai-gpt-4o-mini-2024-07-18",
+        model_kwargs={"headers": HEADERS},
+    )
     
     def generate_code(self, ticket_info: Dict, repo_structure: List[str] = None) -> Dict[str, str]:
         """
