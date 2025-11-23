@@ -1,0 +1,30 @@
+CONTENT:
+```python
+"""
+test_hello_world.py
+
+Unit tests for the hello_world module.
+"""
+
+import unittest
+from io import StringIO
+import sys
+from hello_world import say_hello
+
+class TestHelloWorld(unittest.TestCase):
+    def test_say_hello(self):
+        """
+        Test the say_hello function to ensure it outputs 'Hello, World!'.
+        """
+        # Redirect stdout to capture print statements
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        say_hello()  # Call the function
+        sys.stdout = sys.__stdout__  # Reset redirect
+
+        # Verify the output
+        self.assertEqual(captured_output.getvalue().strip(), 'Hello, World!')
+
+if __name__ == '__main__':
+    unittest.main()  # Execute the tests if this module is run as a script.
+```

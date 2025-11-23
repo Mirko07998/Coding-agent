@@ -1,0 +1,21 @@
+CONTENT:
+```python
+"""
+hello_world.py
+
+This module provides a simple function to print 'Hello, World!' to the console.
+It serves as an introductory example of a Python module.
+"""
+
+def say_hello():
+    """
+    Print 'Hello, World!' to the console.
+
+    This function does not take any parameters and simply outputs the greeting 
+    message when called.
+    """
+    print('Hello, World!')
+
+if __name__ == "__main__":
+    say_hello()  # Execute the main function if this module is run as a script.
+```
