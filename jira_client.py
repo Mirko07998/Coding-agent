@@ -1,5 +1,7 @@
 """Jira API client for fetching ticket information."""
 import os
+import json
+from pathlib import Path
 from typing import Dict, Optional
 from dotenv import load_dotenv
 
@@ -23,13 +25,30 @@ except ImportError:
 class JiraClient:
     """Client for interacting with Jira API or MCP server."""
     
-    def __init__(self, use_mcp: Optional[bool] = None):
+    def __init__(self, use_mcp: Optional[bool] = None, use_file: Optional[bool] = None, file_path: Optional[str] = None):
         """
         Initialize Jira client with credentials from environment.
         
         Args:
             use_mcp: Force MCP mode if True, API mode if False, auto-detect if None
+            use_file: Force file mode if True, auto-detect if None (checks JIRA_USE_FILE env var)
+            file_path: Path to JSON file containing ticket data (defaults to test_ticket.json)
         """
+        # Check for file mode first (highest priority for testing)
+        if use_file is None:
+            use_file = os.getenv("JIRA_USE_FILE", "false").lower() == "true"
+        
+        self.use_file = use_file
+        
+        if self.use_file:
+            # File mode - read from JSON file instead of Jira
+            self.file_path = Path(file_path or os.getenv("JIRA_FILE_PATH", "test_ticket.json"))
+            self.client = None
+            self.mcp_client = None
+            print(f"📄 Using file mode for Jira (reading from: {self.file_path})")
+            return
+        
+        # Continue with normal Jira initialization
         self.use_mcp = use_mcp
         if self.use_mcp is None:
             self.use_mcp = os.getenv("USE_MCP_JIRA", "false").lower() == "true"
@@ -62,14 +81,18 @@ class JiraClient:
     
     def get_ticket(self, ticket_key: str) -> Dict:
         """
-        Fetch ticket information from Jira.
+        Fetch ticket information from Jira or file.
         
         Args:
-            ticket_key: Jira ticket key (e.g., 'PROJ-123')
+            ticket_key: Jira ticket key (e.g., 'PROJ-123') - ignored in file mode
             
         Returns:
             Dictionary containing ticket information
         """
+        # Use file mode if enabled (for testing)
+        if self.use_file:
+            return self._get_ticket_from_file()
+        
         # Use MCP if enabled
         if self.use_mcp and self.mcp_client:
             return self.mcp_client.get_ticket(ticket_key)
@@ -98,6 +121,40 @@ class JiraClient:
             return ticket_info
         except Exception as e:
             raise Exception(f"Failed to fetch Jira ticket {ticket_key}: {str(e)}")
+    
+    def _get_ticket_from_file(self) -> Dict:
+        """
+        Read ticket information from JSON file.
+        
+        Returns:
+            Dictionary containing ticket information
+        """
+        try:
+            if not self.file_path.exists():
+                raise FileNotFoundError(f"Ticket file not found: {self.file_path}")
+            
+            with open(self.file_path, 'r', encoding='utf-8') as f:
+                ticket_info = json.load(f)
+            
+            # Ensure all required fields are present
+            required_fields = ['key', 'summary', 'description', 'acceptance_criteria']
+            for field in required_fields:
+                if field not in ticket_info:
+                    ticket_info[field] = ""
+            
+            # Set defaults for optional fields
+            ticket_info.setdefault('status', 'To Do')
+            ticket_info.setdefault('issue_type', 'Story')
+            ticket_info.setdefault('reporter', None)
+            ticket_info.setdefault('assignee', None)
+            ticket_info.setdefault('labels', [])
+            ticket_info.setdefault('url', f"file://{self.file_path}")
+            
+            return ticket_info
+        except json.JSONDecodeError as e:
+            raise Exception(f"Invalid JSON in ticket file {self.file_path}: {str(e)}")
+        except Exception as e:
+            raise Exception(f"Failed to read ticket from file {self.file_path}: {str(e)}")
     
     def _extract_acceptance_criteria(self, issue) -> str:
         """Extract acceptance criteria from ticket fields."""
@@ -135,11 +192,31 @@ class JiraClient:
         Get linked GitHub repository from ticket.
         
         Args:
-            ticket_key: Jira ticket key
+            ticket_key: Jira ticket key - ignored in file mode
             
         Returns:
             Repository URL or None if not found
         """
+        # In file mode, check if repo is in the ticket data
+        if self.use_file:
+            try:
+                ticket_info = self._get_ticket_from_file()
+                # Check if repo is specified in the ticket data
+                if 'linked_repo' in ticket_info:
+                    return ticket_info['linked_repo']
+                # Try to extract from description
+                description = ticket_info.get('description', '')
+                if description:
+                    import re
+                    repo_pattern = r'github\.com[/:]([\w-]+)/([\w-]+)'
+                    matches = re.findall(repo_pattern, description)
+                    if matches:
+                        owner, repo = matches[0]
+                        return f"{owner}/{repo}"
+            except Exception:
+                pass
+            return None
+        
         # Use MCP if enabled
         if self.use_mcp and self.mcp_client:
             return self.mcp_client.get_linked_repo(ticket_key)
