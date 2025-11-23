@@ -1,8 +1,7 @@
 """Main autonomous coding agent that orchestrates the entire workflow."""
 import sys
-import os
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 from jira_client import JiraClient
 from github_client import GitHubClient
 from code_generator import CodeGenerator
