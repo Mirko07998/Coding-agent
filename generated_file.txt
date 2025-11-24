@@ -1,1 +1,2 @@
-# This module does not have any external dependencies.
+## Testing
+To verify functionality, run the unit tests:
