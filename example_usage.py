@@ -13,7 +13,7 @@ if __name__ == "__main__":
     # to pass use_file=True to JiraClient()
     
     # Initialize the agent
-    agent = AutonomousCodingAgent(repo_path=".")
+    agent = AutonomousCodingAgent(repo_path="")
     
     # Process a ticket (replace with your actual ticket key)
     # In file mode, the ticket_key is ignored and data is read from the file

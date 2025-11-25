@@ -1,0 +1,23 @@
+[project]
+name = "coding-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.122.0",
+    "uvicorn[standard]>=0.38.0",
+    "langchain>=1.0.0",
+    "langchain-core>=1.0.0",
+    "langchain-openai>=1.0.0",
+    "langchain-community>=0.4.0",
+    "openai>=1.0.0",
+    "jira>=3.5.0",
+    "PyGithub>=2.1.0",
+    "python-dotenv>=1.0.0",
+    "gitpython>=3.1.40",
+    "requests>=2.31.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "authlib>=1.6.5",
+]
