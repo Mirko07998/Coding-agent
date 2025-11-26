@@ -209,8 +209,8 @@ class AutonomousCodingAgent:
                                 ticket_summary = ticket_info.get('summary', '')
                                 jira_url = ticket_info.get('url')
                             else:
-                                ticket_summary = getattr(ticket_info, 'summary', '')
-                                jira_url = getattr(ticket_info, 'url', None)
+                                ticket_summary = ticket_info.summary
+                                jira_url = ticket_info.url
 
                             email_sent = self.email_client.send_pr_notification(
                                 ticket_key=ticket_key,
