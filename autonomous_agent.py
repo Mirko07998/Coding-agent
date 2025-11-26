@@ -9,6 +9,7 @@ from code_generator import CodeGenerator
 from build_validator import BuildValidator
 from git_operations import GitOperations
 from models.process_ticket_res import ProcessTicketRes
+from email_client import EmailClient
 
 
 def call_mcp_tool(mcpServer: str, toolName: str, toolArgs: Dict[str, Any]) -> Any:
@@ -71,7 +72,8 @@ class AutonomousCodingAgent:
         self.code_generator = CodeGenerator()
         self.build_validator = BuildValidator(str(self.repo_path))
         self.git_ops = GitOperations(str(self.repo_path))
-    
+        self.email_client = EmailClient()
+
     def process_ticket(self, ticket_key: str, push_to_github: bool = True) -> ProcessTicketRes:
         """
         Process a Jira ticket: fetch, generate code, validate, and push.
@@ -91,9 +93,11 @@ class AutonomousCodingAgent:
             "build_success": False,
             "tests_success": False,
             "pushed": False,
-            "errors": [],
-            "pr_url": None
+            "pr_url": None,
+            "email_sent": False,
+            "errors": []
         }
+        
         try:
             print(f"\n{'='*60}")
             print(f"🚀 Processing Jira Ticket: {ticket_key}")
@@ -196,6 +200,30 @@ class AutonomousCodingAgent:
 
                     if pr_url:
                         results["pr_url"] = pr_url
+
+                        # Step 10: Send email notification
+                        print("\n📧 Step 10: Sending email notification...")
+                        try:
+                            # Handle both dict and object-style ticket_info
+                            if isinstance(ticket_info, dict):
+                                ticket_summary = ticket_info.get('summary', '')
+                                jira_url = ticket_info.get('url')
+                            else:
+                                ticket_summary = getattr(ticket_info, 'summary', '')
+                                jira_url = getattr(ticket_info, 'url', None)
+
+                            email_sent = self.email_client.send_pr_notification(
+                                ticket_key=ticket_key,
+                                ticket_summary=ticket_summary,
+                                pr_url=pr_url,
+                                branch_name=branch_name,
+                                files_generated=results["files_generated"],
+                                jira_url=jira_url
+                            )
+                            results["email_sent"] = email_sent
+                        except Exception as e:
+                            print(f"⚠ Email notification failed: {str(e)}")
+                            results["errors"].append(f"Email notification failed: {str(e)}")
                     else:
                         msg = "Pull request creation failed"
                         results["errors"].append(msg)

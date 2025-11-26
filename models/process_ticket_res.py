@@ -11,3 +11,4 @@ class ProcessTicketRes(BaseModel):
     pushed: bool = False
     errors: List[str] = []
     pr_url: Optional[str] = None
+    email_sent: Optional[bool] = False
