@@ -7,13 +7,14 @@ if __name__ == "__main__":
     # For testing: Use file mode instead of Jira API
     # Option 1: Set environment variable
     os.environ["JIRA_USE_FILE"] = "true"
-    os.environ["JIRA_FILE_PATH"] = "/Users/DJM8BG/PycharmProjects/Coding-agent/test_ticket.json"  # Optional, defaults to test_ticket.json
+    os.environ["JIRA_FILE_PATH"] = "/Users/ILM3BG/Desktop/Hackaton2025/Coding-agent/test_ticket.json"  # Optional, defaults to test_ticket.json
     
     # Option 2: Modify jira_client.py initialization in autonomous_agent.py
     # to pass use_file=True to JiraClient()
     
     # Initialize the agent
-    agent = AutonomousCodingAgent(repo_path=".")
+
+    agent = AutonomousCodingAgent(repo_path=os.environ["GIT_REPO_PATH"])
     
     # Process a ticket (replace with your actual ticket key)
     # In file mode, the ticket_key is ignored and data is read from the file

@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from typing import Dict, Optional
 from dotenv import load_dotenv
+import requests
+from requests.auth import HTTPBasicAuth
 
 load_dotenv()
 
@@ -63,20 +65,7 @@ class JiraClient:
             if not JIRA_API_AVAILABLE:
                 raise ImportError("jira package not installed. Install with: pip install jira")
             
-            self.server = os.getenv("JIRA_SERVER")
-            self.email = os.getenv("JIRA_EMAIL")
-            self.api_token = os.getenv("JIRA_API_TOKEN")
-            
-            if not all([self.server, self.email, self.api_token]):
-                raise ValueError(
-                    "Missing Jira credentials. Please set JIRA_SERVER, JIRA_EMAIL, and JIRA_API_TOKEN in .env"
-                )
-            
-            self.client = JIRA(
-                server=self.server,
-                basic_auth=(self.email, self.api_token)
-            )
-            self.mcp_client = None
+
             print("🔌 Using API for Jira")
     
     def get_ticket(self, ticket_key: str) -> Dict:
@@ -99,9 +88,7 @@ class JiraClient:
         
         # Otherwise use API
         try:
-            issue = self.client.issue(ticket_key)
-            
-            # Extract acceptance criteria from description or custom fields
+                    # Extract acceptance criteria from description or custom fields
             description = issue.fields.description or ""
             acceptance_criteria = self._extract_acceptance_criteria(issue)
             
