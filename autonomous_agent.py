@@ -8,6 +8,7 @@ from github_client import GitHubClient
 from code_generator import CodeGenerator
 from build_validator import BuildValidator
 from git_operations import GitOperations
+from models.process_ticket_res import ProcessTicketRes
 
 
 def call_mcp_tool(mcpServer: str, toolName: str, toolArgs: Dict[str, Any]) -> Any:
@@ -71,7 +72,7 @@ class AutonomousCodingAgent:
         self.build_validator = BuildValidator(str(self.repo_path))
         self.git_ops = GitOperations(str(self.repo_path))
     
-    def process_ticket(self, ticket_key: str, push_to_github: bool = True) -> Dict:
+    def process_ticket(self, ticket_key: str, push_to_github: bool = True) -> ProcessTicketRes:
         """
         Process a Jira ticket: fetch, generate code, validate, and push.
         
@@ -93,7 +94,6 @@ class AutonomousCodingAgent:
             "errors": [],
             "pr_url": None
         }
-        
         try:
             print(f"\n{'='*60}")
             print(f"🚀 Processing Jira Ticket: {ticket_key}")
@@ -170,7 +170,7 @@ class AutonomousCodingAgent:
                 print(f"\n❌ Validation failed:\n{validation_message}")
                 print("\n⚠ Not pushing to GitHub due to build/test failures")
                 results["success"] = False
-                return results
+                return ProcessTicketRes(**results)
             
             # Step 9: Push to GitHub
             if push_to_github:
@@ -217,7 +217,7 @@ class AutonomousCodingAgent:
             import traceback
             traceback.print_exc()
         
-        return results
+        return ProcessTicketRes(**results)
     
     def _sanitize_branch_name(self, ticket_key: str) -> str:
         """
