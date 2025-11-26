@@ -6,6 +6,10 @@ from typing import Dict, Optional
 
 import requests
 from dotenv import load_dotenv
+from fastapi import HTTPException
+
+from models.jira_ticket import TicketInfo
+from models.singleton import Singleton
 
 load_dotenv()
 
@@ -24,7 +28,7 @@ except ImportError:
     JIRA_API_AVAILABLE = False
 
 
-class JiraClient:
+class JiraClient(metaclass=Singleton):
     """Client for interacting with Jira API or MCP server."""
     
     def __init__(self, use_mcp: Optional[bool] = None, use_file: Optional[bool] = None, file_path: Optional[str] = None):
@@ -65,7 +69,7 @@ class JiraClient:
             if not JIRA_API_AVAILABLE:
                 raise ImportError("jira package not installed. Install with: pip install jira")
             
-            self.server = os.getenv("JIRA_SERVER")
+            self.server = os.getenv("JIRA_SERVER_TEST")
             self.email = os.getenv("JIRA_EMAIL")
             self.api_token = os.getenv("JIRA_API_TOKEN")
             
@@ -74,14 +78,21 @@ class JiraClient:
                     "Missing Jira credentials. Please set JIRA_SERVER, JIRA_EMAIL, and JIRA_API_TOKEN in .env"
                 )
             
-            # self.client = JIRA(
-            #     server=self.server,
-            #     basic_auth=(self.email, self.api_token)
-            # )
+
             self.mcp_client = None
+            options = {
+                "server": "https://rb-tracker.bosch.com/tracker19",
+                "headers": {
+                    "Authorization": f"Bearer {self.api_token}"
+                }
+            }
+            self.client = JIRA(
+                options=options
+            )
+
             print("🔌 Using API for Jira")
     
-    def get_ticket(self, ticket_key: str) -> Dict:
+    def get_ticket(self, ticket_key: str) -> TicketInfo:
         """
         Fetch ticket information from Jira or file.
         
@@ -102,40 +113,52 @@ class JiraClient:
         
         # Otherwise use API
         try:
-            jira_url = "https://rb-tracker.bosch.com/tracker19/"
-            issue_key = "BDSERBIATOPICS-347"
-            auth_header = {"Authorization": f"Bearer {self.api_token}"}
-            url = f"{jira_url}/rest/api/2/issue/{issue_key}"
+            # jira_url = "https://rb-tracker.bosch.com/tracker19/"
+            # issue_key = "BDSERBIATOPICS-347"
+            # auth_header = {"Authorization": f"Bearer {self.api_token}"}
+            # url = f"{jira_url}/rest/api/2/issue/{issue_key}"
+            #
+            # response = requests.get(url, headers=auth_header)
+            # jira_ticket = response.json()
 
-            response = requests.get(url, headers=auth_header)
-            ticket_info = response.json()
             print("---------------------------")
-            print(response.text)
-            print("---------------------------")
-            print(ticket_info)
+            jira_service_ticket = self.client.issue(ticket_key)
             # issue = response.json()
             # issue = self.client.issue(ticket_key)
             #
             # # Extract acceptance criteria from description or custom fields
-            # description = issue.fields.description or ""
-            # acceptance_criteria = self._extract_acceptance_criteria(issue)
+            description = jira_service_ticket.fields.description or ""
+            acceptance_criteria = self._extract_acceptance_criteria(jira_service_ticket)
             # print(f"{self.server}/issue/{issue.key}", "jira url")
-            # ticket_info = {
-            #     "key": issue.key,
-            #     "summary": issue.fields.summary,
-            #     "description": description,
-            #     "acceptance_criteria": acceptance_criteria,
-            #     "status": issue.fields.status.name,
-            #     "issue_type": issue.fields.issuetype.name,
-            #     "reporter": issue.fields.reporter.displayName if issue.fields.reporter else None,
-            #     "assignee": issue.fields.assignee.displayName if issue.fields.assignee else None,
-            #     "labels": issue.fields.labels,
-            #     "url": f"{self.server}/issue/{issue.key}"
-            # }
+            from models.jira_ticket import TicketInfo
+
+            ticket_info = TicketInfo(
+                key=jira_service_ticket.key,
+                summary=jira_service_ticket.fields.summary,
+                description=description,
+                acceptance_criteria=acceptance_criteria,
+                status=jira_service_ticket.fields.status.name,
+                issue_type=jira_service_ticket.fields.issuetype.name,
+                reporter=(
+                    jira_service_ticket.fields.reporter.displayName
+                    if getattr(jira_service_ticket.fields, "reporter", None)
+                    else None
+                ),
+                assignee=(
+                    jira_service_ticket.fields.assignee.displayName
+                    if getattr(jira_service_ticket.fields, "assignee", None)
+                    else None
+                ),
+                labels=jira_service_ticket.fields.labels,
+                url=f"{self.server}/issue/{jira_service_ticket.key}",
+            )
             
             return ticket_info
         except Exception as e:
-            raise Exception(f"Failed to fetch Jira ticket {ticket_key}: {str(e)}")
+            raise HTTPException(
+                status_code=e.status_code if hasattr(e, 'status_code') else 500,
+                detail=f"Failed to fetch Jira ticket {ticket_key}: {e}"
+            )
     
     def _get_ticket_from_file(self) -> Dict:
         """
@@ -170,12 +193,12 @@ class JiraClient:
             raise Exception(f"Invalid JSON in ticket file {self.file_path}: {str(e)}")
         except Exception as e:
             raise Exception(f"Failed to read ticket from file {self.file_path}: {str(e)}")
-    
+
     def _extract_acceptance_criteria(self, issue) -> str:
         """Extract acceptance criteria from ticket fields."""
         # Try to find acceptance criteria in custom fields or description
         acceptance_criteria = ""
-        
+
         # Check description for acceptance criteria section
         if issue.fields.description:
             desc = issue.fields.description
@@ -184,7 +207,7 @@ class JiraClient:
                 lines = desc.split('\n')
                 in_criteria = False
                 criteria_lines = []
-                
+
                 for line in lines:
                     if "acceptance" in line.lower() or "criteria" in line.lower():
                         in_criteria = True
@@ -193,15 +216,16 @@ class JiraClient:
                         criteria_lines.append(line.strip())
                     elif in_criteria and not line.strip() and criteria_lines:
                         break
-                
+
                 acceptance_criteria = "\n".join(criteria_lines)
-        
-        # If no criteria found, use description as fallback
+
+                # If no criteria found, use description as fallback
         if not acceptance_criteria:
             acceptance_criteria = issue.fields.description or ""
-        
+
         return acceptance_criteria
-    
+
+
     def get_linked_repo(self, ticket_key: str) -> Optional[str]:
         """
         Get linked GitHub repository from ticket.

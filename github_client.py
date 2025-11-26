@@ -3,6 +3,8 @@ import os
 from typing import Optional, List
 from dotenv import load_dotenv
 
+from models.singleton import Singleton
+
 load_dotenv()
 
 # Try to import MCP client

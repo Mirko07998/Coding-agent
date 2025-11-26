@@ -19,6 +19,8 @@ class GitOperations:
         Args:
             repo_path: Path to the repository
         """
+        repo_path = os.getenv("GIT_REPO_PATH")
+        print(repo_path, 'repo path in git operations')
         self.repo_path = Path(repo_path).resolve()
         try:
             self.repo = Repo(self.repo_path)
@@ -118,12 +120,30 @@ class GitOperations:
         Returns:
             True if push was successful
         """
+
         try:
             remote_repo = self.repo.remote(remote)
-            if force:
-                remote_repo.push(branch_name, force=True)
+            token = os.getenv("GITHUB_PUSH_TOKEN") or os.getenv("GITHUB_TOKEN")
+            username = os.getenv("GITHUB_PUSH_USERNAME") or os.getenv("GIT_USER_NAME")
+            remote_url = remote_repo.url
+            if token and username and remote_url.startswith("https://"):
+                # Inject credentials into URL temporarily for this push
+                auth_prefix = f"https://{username}:{token}@"
+                authed_url = auth_prefix + remote_url.removeprefix("https://")
+                refspec = f"{branch_name}:{branch_name}"
+                if force:
+                    self.repo.git.push(authed_url, refspec, force=True)
+                else:
+                    self.repo.git.push(authed_url, refspec)
             else:
-                remote_repo.push(branch_name)
+                if force:
+                    remote_repo.push(branch_name, force=True)
+                else:
+                    remote_repo.push(branch_name)
+            # if force:
+            #     remote_repo.push(branch_name, force=True)
+            # else:
+            #     remote_repo.push(branch_name)
             
             print(f"✓ Pushed branch {branch_name} to {remote}")
             return True

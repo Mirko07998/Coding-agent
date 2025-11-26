@@ -6,6 +6,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_litellm import ChatLiteLLM
 from dotenv import load_dotenv
 
+from models.jira_ticket import TicketInfo
+
 FARM_API_KEY = os.environ["FARM_API_KEY"]
 HEADERS = {"genaiplatform-farm-subscription-key": FARM_API_KEY}
 
@@ -26,7 +28,7 @@ class CodeGenerator:
         model_kwargs={"headers": HEADERS},
     )
     
-    def generate_code(self, ticket_info: Dict, repo_structure: List[str] = None) -> Dict[str, str]:
+    def generate_code(self, ticket_info: TicketInfo, repo_structure: List[str] = None) -> Dict[str, str]:
         """
         Generate code based on ticket acceptance criteria.
         
@@ -37,7 +39,7 @@ class CodeGenerator:
         Returns:
             Dictionary mapping file paths to file contents
         """
-        print(f"\n🤖 Generating code for ticket: {ticket_info['key']}")
+        print(f"\n🤖 Generating code for ticket: {ticket_info.key}")
         
         # Create a comprehensive prompt
         prompt_template = ChatPromptTemplate.from_messages([
@@ -80,9 +82,9 @@ Ensure the code is:
         
         # Format the prompt with ticket information
         formatted_prompt = prompt_template.format_messages(
-            summary=ticket_info['summary'],
-            description=ticket_info['description'],
-            acceptance_criteria=ticket_info['acceptance_criteria'],
+            summary=ticket_info.summary,
+            description=ticket_info.description,
+            acceptance_criteria=ticket_info.acceptance_criteria,
             repo_structure=repo_structure_str
         )
         
@@ -91,9 +93,9 @@ Ensure the code is:
             # Try new LCEL syntax first
             chain = prompt_template | self.llm
             response = chain.invoke({
-                "summary": ticket_info['summary'],
-                "description": ticket_info['description'],
-                "acceptance_criteria": ticket_info['acceptance_criteria'],
+                "summary": ticket_info.summary,
+                "description": ticket_info.description,
+                "acceptance_criteria": ticket_info.acceptance_criteria,
                 "repo_structure": repo_structure_str
             })
         except (TypeError, AttributeError):

@@ -1,4 +1,5 @@
 """Main autonomous coding agent that orchestrates the entire workflow."""
+import os
 import sys
 from pathlib import Path
 from typing import Dict, Any
@@ -99,9 +100,9 @@ class AutonomousCodingAgent:
             # Step 1: Fetch ticket information
             print("📋 Step 1: Fetching ticket information from Jira...")
             ticket_info = self.jira_client.get_ticket(ticket_key)
-            print(f"✓ Ticket: {ticket_info['summary']}")
-            print(f"  Status: {ticket_info['status']}")
-            print(f"  URL: {ticket_info['url']}\n")
+            print(f"✓ Ticket: {ticket_info.summary}")
+            print(f"  Status: {ticket_info.status}")
+            print(f"  URL: {ticket_info.url}\n")
             
             # Step 2: Create branch
             print("🌿 Step 2: Creating branch...")
@@ -153,7 +154,7 @@ class AutonomousCodingAgent:
             
             # Step 7: Commit changes
             print("\n💾 Step 7: Committing changes...")
-            commit_message = f"{ticket_key}: {ticket_info['summary']}\n\nGenerated code to fulfill acceptance criteria."
+            commit_message = f"{ticket_key}: {ticket_info.summary}\n\nGenerated code to fulfill acceptance criteria."
             self.git_ops.commit(commit_message)
             
             # Step 8: Validate build and tests
@@ -271,7 +272,6 @@ def main():
     # Exit with appropriate code
     sys.exit(0 if results['success'] else 1)
 
-
-if __name__ == "__main__":
-    main()
-
+def get_autonomous_agent_service():
+    """Dependency injector for AutonomousCodingAgent."""
+    return AutonomousCodingAgent()

@@ -20,4 +20,5 @@ dependencies = [
     "pydantic>=2.5.0",
     "pydantic-settings>=2.1.0",
     "authlib>=1.6.5",
+    "langchain-litellm>=0.3.2",
 ]
