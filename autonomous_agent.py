@@ -8,6 +8,7 @@ from github_client import GitHubClient
 from code_generator import CodeGenerator
 from build_validator import BuildValidator
 from git_operations import GitOperations
+from models.process_ticket_res import ProcessTicketRes
 from email_client import EmailClient
 
 
@@ -72,8 +73,8 @@ class AutonomousCodingAgent:
         self.build_validator = BuildValidator(str(self.repo_path))
         self.git_ops = GitOperations(str(self.repo_path))
         self.email_client = EmailClient()
-    
-    def process_ticket(self, ticket_key: str, push_to_github: bool = True) -> Dict:
+
+    def process_ticket(self, ticket_key: str, push_to_github: bool = True) -> ProcessTicketRes:
         """
         Process a Jira ticket: fetch, generate code, validate, and push.
         
@@ -173,7 +174,7 @@ class AutonomousCodingAgent:
                 print(f"\n❌ Validation failed:\n{validation_message}")
                 print("\n⚠ Not pushing to GitHub due to build/test failures")
                 results["success"] = False
-                return results
+                return ProcessTicketRes(**results)
             
             # Step 9: Push to GitHub
             if push_to_github:
@@ -199,7 +200,7 @@ class AutonomousCodingAgent:
 
                     if pr_url:
                         results["pr_url"] = pr_url
-                        
+
                         # Step 10: Send email notification
                         print("\n📧 Step 10: Sending email notification...")
                         try:
@@ -210,7 +211,7 @@ class AutonomousCodingAgent:
                             else:
                                 ticket_summary = getattr(ticket_info, 'summary', '')
                                 jira_url = getattr(ticket_info, 'url', None)
-                            
+
                             email_sent = self.email_client.send_pr_notification(
                                 ticket_key=ticket_key,
                                 ticket_summary=ticket_summary,
@@ -244,7 +245,7 @@ class AutonomousCodingAgent:
             import traceback
             traceback.print_exc()
         
-        return results
+        return ProcessTicketRes(**results)
     
     def _sanitize_branch_name(self, ticket_key: str) -> str:
         """
