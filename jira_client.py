@@ -113,23 +113,14 @@ class JiraClient(metaclass=Singleton):
         
         # Otherwise use API
         try:
-            # jira_url = "https://rb-tracker.bosch.com/tracker19/"
-            # issue_key = "BDSERBIATOPICS-347"
-            # auth_header = {"Authorization": f"Bearer {self.api_token}"}
-            # url = f"{jira_url}/rest/api/2/issue/{issue_key}"
-            #
-            # response = requests.get(url, headers=auth_header)
-            # jira_ticket = response.json()
-
-            print("---------------------------")
             jira_service_ticket = self.client.issue(ticket_key)
-            # issue = response.json()
-            # issue = self.client.issue(ticket_key)
-            #
             # # Extract acceptance criteria from description or custom fields
             description = jira_service_ticket.fields.description or ""
+            print("---------------------------")
+            print(f"Description from ticket: {description}")
             acceptance_criteria = self._extract_acceptance_criteria(jira_service_ticket)
-            # print(f"{self.server}/issue/{issue.key}", "jira url")
+            print("---------------------------")
+            print(f"Acceptance criteria extracted: {acceptance_criteria}")
             from models.jira_ticket import TicketInfo
 
             ticket_info = TicketInfo(

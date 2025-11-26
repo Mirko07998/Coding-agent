@@ -63,6 +63,8 @@ FILE: <file_path>
 CONTENT:
 <file_content>
 END_FILE
+and don't add chars at the start of the first line before FILE and END FILE. Avoid adding quotations marks after CONTENT 
+and language name.
 
 Generate all necessary files including:
 - Source code files
@@ -87,7 +89,9 @@ Ensure the code is:
             acceptance_criteria=ticket_info.acceptance_criteria,
             repo_structure=repo_structure_str
         )
-        
+        print("----------------------------------")
+        print(formatted_prompt, 'format the prompt')
+        print("----------------------------------")
         # Invoke the LLM
         try:
             # Try new LCEL syntax first
@@ -101,7 +105,9 @@ Ensure the code is:
         except (TypeError, AttributeError):
             # Fallback: direct invocation
             response = self.llm.invoke(formatted_prompt)
-        
+        print("----------------------------------")
+        print(response.content)
+        print("----------------------------------")
         # Extract content from response
         if hasattr(response, 'content'):
             response = response.content
@@ -112,7 +118,7 @@ Ensure the code is:
         
         # Parse the response to extract files
         files = self._parse_generated_files(response)
-        
+
         print(f"✓ Generated {len(files)} file(s)")
         return files
     
@@ -131,8 +137,11 @@ Ensure the code is:
         current_content = []
         
         lines = response.split('\n')
-        
+        print(lines)
         for line in lines:
+            if line.startswith('CONTENT:'):
+                # Skip the CONTENT line
+                continue
             if line.startswith('FILE:'):
                 # Save previous file if exists
                 if current_file:

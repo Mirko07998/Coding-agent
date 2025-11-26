@@ -132,8 +132,10 @@ class GitOperations:
                 authed_url = auth_prefix + remote_url.removeprefix("https://")
                 refspec = f"{branch_name}:{branch_name}"
                 if force:
+                    print("in force push block")
                     self.repo.git.push(authed_url, refspec, force=True)
                 else:
+                    print("in regular push block")
                     self.repo.git.push(authed_url, refspec)
             else:
                 if force:
